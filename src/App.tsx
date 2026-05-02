@@ -170,14 +170,9 @@ const App: React.FC = () => {
   const [currentMetadata, setCurrentMetadata] = useState<string>('POWER OFF');
   const [isAutoFreq, setIsAutoFreq] = useState(true);
   
-  // Shazam Integration States (AudD.io powered)
-  const [isShazamOpen, setIsShazamOpen] = useState(false);
-  const [auddToken, setAuddToken] = useState(() => localStorage.getItem('AUDD_API_TOKEN') || '');
-  const [auddTokenInput, setAuddTokenInput] = useState('');
-  const isShazamLoggedIn = auddToken.length > 5;
-  const [isShazamScanning, setIsShazamScanning] = useState(false);
-  const [isShazamListening, setIsShazamListening] = useState(false);
-  const [shazamResult, setShazamResult] = useState<ShazamTrack | null>(null);
+  // Shazam — UI hidden, will be re-enabled with AudD.io integration
+  // State and handlers removed to pass strict TypeScript checks
+
   
   // Community & Social States
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
@@ -460,89 +455,8 @@ const App: React.FC = () => {
     e.stopPropagation();
     setStationToDelete(null);
   };
+  /* SHAZAM HANDLERS — removed from build, re-enable with AudD.io token */
 
-  const handleShazamAction = () => {
-    if (!isShazamLoggedIn || !engineRef.current) return;
-    
-    setIsShazamScanning(true);
-    setIsShazamListening(true);
-    setShazamResult(null);
-
-    const stream = engineRef.current.getStream();
-    if (!stream) {
-      setShazamResult({ id: 'error', title: 'HARDWARE ERROR', artist: 'NO SIGNAL INPUT', timestamp: '' });
-      setIsShazamScanning(false);
-      setIsShazamListening(false);
-      return;
-    }
-
-    const mediaRecorder = new MediaRecorder(stream);
-    const chunks: BlobPart[] = [];
-
-    mediaRecorder.ondataavailable = (e) => {
-      if (e.data.size > 0) chunks.push(e.data);
-    };
-
-    mediaRecorder.onstop = async () => {
-      setIsShazamListening(false);
-      const blob = new Blob(chunks, { type: 'audio/webm' });
-      console.log(`[SHAZAM] Captured ${blob.size} bytes. Sending to AudD...`);
-
-      try {
-        const formData = new FormData();
-        formData.append('file', blob, 'capture.webm');
-        formData.append('api_token', auddToken);
-        formData.append('return', 'spotify,apple_music');
-
-        const resp = await fetch('https://api.audd.io/', { method: 'POST', body: formData });
-        const data = await resp.json();
-        console.log('[SHAZAM] AudD response:', data);
-
-        if (data.status === 'success' && data.result) {
-          const r = data.result;
-          const track: ShazamTrack = {
-            id: `track-${Date.now()}`,
-            title: r.title || 'UNKNOWN TRACK',
-            artist: r.artist || 'UNKNOWN ARTIST',
-            album: r.album || undefined,
-            albumArt: r.spotify?.album?.images?.[0]?.url || undefined,
-            spotifyUrl: r.spotify?.external_urls?.spotify || undefined,
-            appleMusicUrl: r.apple_music?.url || undefined,
-            timestamp: new Date().toLocaleTimeString()
-          };
-          setShazamResult(track);
-
-          if (currentUser) {
-            const updatedHistory = [track, ...(currentUser.shazamHistory || [])].slice(0, 50);
-            const updatedUser = { ...currentUser, shazamHistory: updatedHistory };
-            setCurrentUser(updatedUser);
-            const updatedRegistry = userRegistry.map(u => u.id === currentUser.id ? updatedUser : u);
-            setUserRegistry(updatedRegistry);
-            localStorage.setItem(REGISTRY_KEY, JSON.stringify(updatedRegistry));
-            localStorage.setItem(USER_SESSION_KEY, JSON.stringify(updatedUser));
-          }
-        } else {
-          setShazamResult({ id: 'error', title: 'NO MATCH FOUND', artist: data.error?.error_message || 'TRY AGAIN', timestamp: '' });
-        }
-      } catch (err) {
-        console.error('[SHAZAM] AudD request failed:', err);
-        setShazamResult({ id: 'error', title: 'NETWORK ERROR', artist: 'CHECK CONNECTION', timestamp: '' });
-      }
-      setIsShazamScanning(false);
-    };
-
-    mediaRecorder.start();
-    setTimeout(() => { mediaRecorder.stop(); }, 8000);
-  };
-
-  const handleSaveAuddToken = () => {
-    const token = auddTokenInput.trim();
-    if (token.length > 5) {
-      setAuddToken(token);
-      localStorage.setItem('AUDD_API_TOKEN', token);
-      setAuddTokenInput('');
-    }
-  };
 
   // --- SOCIAL & COMMUNITY ACTIONS ---
   const handleLogin = (e: React.FormEvent) => {
@@ -703,9 +617,11 @@ const App: React.FC = () => {
                   NORMALIZER
                 </button>
 
+                {/* SHAZAM — hidden until AudD token is configured
                 <button className={`shazam-button ${isShazamOpen ? 'active' : ''}`} onClick={() => setIsShazamOpen(!isShazamOpen)} disabled={!isStarted}>
                   SHAZAM
                 </button>
+                */}
 
                 {backupStations ? (
                   <button className="restore-setup-btn active-alarm" onClick={restoreSnapshot}>
@@ -969,83 +885,7 @@ const App: React.FC = () => {
           </div>
         </div>
 
-        {isShazamOpen && (
-          <div className="shazam-panel">
-            <div className="shazam-header">
-              <div className="shazam-title">SHAZAM DISCOVERY</div>
-              <button className="shazam-close" onClick={() => setIsShazamOpen(false)}>×</button>
-            </div>
-            
-            <div className="shazam-body">
-              {!isShazamLoggedIn ? (
-                <div className="shazam-login">
-                  <div className="shazam-icon-static">♪</div>
-                  <h3>AUDD API TOKEN</h3>
-                  <p>Get your free token at <a href="https://dashboard.audd.io" target="_blank" rel="noopener" style={{color:'#f00'}}>dashboard.audd.io</a></p>
-                  <div className="audd-token-input">
-                    <input 
-                      type="text"
-                      value={auddTokenInput}
-                      onChange={(e) => setAuddTokenInput(e.target.value)}
-                      placeholder="Paste API token here..."
-                      onKeyDown={(e) => e.key === 'Enter' && handleSaveAuddToken()}
-                    />
-                    <button 
-                      className="shazam-login-btn" 
-                      onClick={handleSaveAuddToken}
-                      disabled={auddTokenInput.trim().length < 5}
-                    >
-                      ACTIVATE
-                    </button>
-                  </div>
-                </div>
-              ) : isShazamScanning ? (
-                <div className={`shazam-scanning ${isShazamListening ? 'listening' : ''}`}>
-                  <div className="shazam-radar"></div>
-                  <div className="shazam-status">
-                    {isShazamListening ? 'ESCUCHANDO AUDIO...' : 'PROCESANDO SEÑAL...'}
-                  </div>
-                </div>
-              ) : shazamResult ? (
-                <div className="shazam-result">
-                  {shazamResult.albumArt && <img src={shazamResult.albumArt} alt="album" className="result-album-art" />}
-                  <div className="result-label">{shazamResult.id === 'error' ? 'STATUS:' : 'FOUND ON AIR:'}</div>
-                  <div className="result-title">{shazamResult.title}</div>
-                  <div className="result-artist">{shazamResult.artist}</div>
-                  {shazamResult.album && <div className="result-album">{shazamResult.album}</div>}
-                  <div className="result-links">
-                    {shazamResult.spotifyUrl && <a href={shazamResult.spotifyUrl} target="_blank" rel="noopener" className="result-link spotify">SPOTIFY</a>}
-                    {shazamResult.appleMusicUrl && <a href={shazamResult.appleMusicUrl} target="_blank" rel="noopener" className="result-link apple">APPLE MUSIC</a>}
-                  </div>
-                  <button className="shazam-scan-btn retry" onClick={handleShazamAction}>SCAN AGAIN</button>
-                </div>
-              ) : (
-                <div className="shazam-ready">
-                  <div className="shazam-icon-glow" onClick={handleShazamAction}>S</div>
-                  <p>Toca para identificar</p>
-                  <button className="shazam-scan-btn" onClick={handleShazamAction}>TAP TO SHAZAM</button>
-                  
-                  {currentUser && currentUser.shazamHistory && currentUser.shazamHistory.length > 0 && (
-                    <div className="shazam-history">
-                      <div className="history-label">RECENT IDENTIFICATIONS</div>
-                      <div className="history-list">
-                        {currentUser.shazamHistory.map(track => (
-                          <div key={track.id} className="history-item">
-                            <div className="item-info">
-                              <div className="item-title">{track.title}</div>
-                              <div className="item-artist">{track.artist}</div>
-                            </div>
-                            <div className="item-time">{track.timestamp}</div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
+        {/* SHAZAM PANEL — hidden until AudD token is configured */}
 
         {!currentUser && (
           <div className="login-overlay">
