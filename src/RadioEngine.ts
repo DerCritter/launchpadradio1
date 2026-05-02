@@ -33,14 +33,14 @@ export class RadioEngine {
     this.masterGain = this.audioCtx.createGain();
     
     this.analyser = this.audioCtx.createAnalyser();
-    this.analyser.fftSize = 64; // Small fftSize for thick 80s blocky bars
+    this.analyser.fftSize = 64;
     this.analyser.smoothingTimeConstant = 0.8;
     this.dataArray = new Uint8Array(this.analyser.frequencyBinCount);
 
     this.masterGain.connect(this.analyser);
     this.analyser.connect(this.audioCtx.destination);
     
-    // Internal recordable stream
+    // Internal recordable stream for Shazam capture
     this.streamDest = this.audioCtx.createMediaStreamDestination();
     this.analyser.connect(this.streamDest);
 
@@ -86,71 +86,99 @@ export class RadioEngine {
       existing.audio.src = "";
     }
 
+    // --- Phase 1: Try with CORS (enables Web Audio graph routing) ---
     const audio = new Audio();
+    audio.crossOrigin = "anonymous";
+    audio.preload = "auto";
     audio.src = station.url;
-    audio.loop = true;
+    // Live streams are infinite — never set loop
     audio.volume = 0;
     
     let gainNode: GainNode | null = null;
     let source: MediaElementAudioSourceNode | null = null;
     let isCorsBlocked = false;
+    let corsResolved = false;
 
-    // Try to use CORS for AudioContext processing
-    audio.crossOrigin = "anonymous";
-    
-    // Safety timeout for CORS issues that don't throw immediately
-    const corsTimer = setTimeout(() => {
-      if (!isCorsBlocked && audio.networkState === 3) { // NETWORK_NO_SOURCE
-        console.warn(`Timeout/CORS issue with ${station.name}, forcing fallback.`);
-        triggerFallback();
-      }
-    }, 2000);
-
-    const triggerFallback = () => {
-      if (isCorsBlocked) return;
-      isCorsBlocked = true;
-      audio.crossOrigin = null;
-      
-      const state = this.stations.get(id);
-      if (state) state.isCorsBlocked = true;
-
-      if (gainNode) {
-        try { gainNode.disconnect(); } catch(e){}
-        gainNode = null;
-        if (state) state.gainNode = null;
-      }
-      if (source) {
-        try { source.disconnect(); } catch(e){}
-        source = null;
-        if (state) state.source = null;
-      }
-      // Re-load without CORS
-      audio.load();
-      if (this.audioCtx?.state === 'running') {
-        audio.play().catch(() => {});
-      }
-    };
-
-
-    audio.onerror = () => {
-      console.warn(`Audio error on ${station.name}, attempting recovery...`);
-      triggerFallback();
-    };
+    const destination = this.isNormalized ? this.compressor! : this.masterGain!;
 
     try {
       gainNode = this.audioCtx.createGain();
       gainNode.gain.setValueAtTime(0, this.audioCtx.currentTime);
-      gainNode.connect(this.isNormalized ? this.compressor! : this.masterGain!);
+      gainNode.connect(destination);
       
       source = this.audioCtx.createMediaElementSource(audio);
       source.connect(gainNode);
     } catch (e) {
-      triggerFallback();
+      console.warn(`[ENGINE] Failed to create source node for ${station.name}:`, e);
     }
-    
-    clearTimeout(corsTimer);
 
+    // --- Phase 2: CORS validation via events ---
+    // If audio data actually starts flowing, CORS is fine
+    const onSuccess = () => {
+      if (corsResolved) return;
+      corsResolved = true;
+      console.log(`[ENGINE] ✓ ${station.name} — CORS OK, Web Audio routed.`);
+      cleanup();
+    };
 
+    // If the audio element errors, switch to fallback
+    const onError = () => {
+      if (corsResolved) return;
+      corsResolved = true;
+      console.warn(`[ENGINE] ✗ ${station.name} — CORS blocked or network error, switching to direct.`);
+      cleanup();
+      switchToDirectPlayback();
+    };
+
+    // Safety timeout — some streams just hang without erroring
+    const corsTimer = setTimeout(() => {
+      if (!corsResolved && (audio.readyState < 2 || audio.networkState === 3)) {
+        console.warn(`[ENGINE] ⏱ ${station.name} — Timeout, assuming CORS block.`);
+        onError();
+      }
+    }, 4000);
+
+    const cleanup = () => {
+      clearTimeout(corsTimer);
+      audio.removeEventListener('canplaythrough', onSuccess);
+      audio.removeEventListener('playing', onSuccess);
+      audio.removeEventListener('error', onError);
+    };
+
+    const switchToDirectPlayback = () => {
+      isCorsBlocked = true;
+
+      // Disconnect old nodes (they're tainted)
+      if (gainNode) { try { gainNode.disconnect(); } catch(e){} }
+      if (source) { try { source.disconnect(); } catch(e){} }
+      gainNode = null;
+      source = null;
+
+      // Create a completely fresh audio element without crossOrigin
+      const freshAudio = new Audio();
+      freshAudio.preload = "auto";
+      freshAudio.src = station.url;
+      freshAudio.volume = 0;
+
+      // Update the station state with the fresh element
+      const state = this.stations.get(id);
+      if (state) {
+        state.audio = freshAudio;
+        state.gainNode = null;
+        state.source = null;
+        state.isCorsBlocked = true;
+      }
+
+      if (this.audioCtx?.state === 'running') {
+        freshAudio.play().catch(() => {});
+      }
+    };
+
+    audio.addEventListener('canplaythrough', onSuccess);
+    audio.addEventListener('playing', onSuccess);
+    audio.addEventListener('error', onError);
+
+    // Save state immediately so tuning can reference it
     this.stations.set(id, { 
       audio,
       gainNode,
@@ -167,7 +195,6 @@ export class RadioEngine {
     const id = station.id || station.name;
     const url = (station.url || "").trim().replace(/\/$/, "").toLowerCase();
     
-    // Check for existing ID OR same URL
     if (this.stations.has(id)) return;
     if (this.stationsList.some(s => (s.url || "").trim().replace(/\/$/, "").toLowerCase() === url)) {
       console.warn(`Station with URL ${url} already exists in engine.`);
@@ -180,7 +207,6 @@ export class RadioEngine {
 
   updateStationsPool(newList: Station[]) {
     this.stationsList = [...newList];
-    // Sync actual station states
     newList.forEach(s => {
       const id = s.id || s.name;
       if (!this.stations.has(id)) {
@@ -196,8 +222,8 @@ export class RadioEngine {
       state.audio.pause();
       state.audio.src = "";
       state.audio.load();
-      if (state.gainNode) state.gainNode.disconnect();
-      if (state.source) state.source.disconnect();
+      if (state.gainNode) { try { state.gainNode.disconnect(); } catch(e){} }
+      if (state.source) { try { state.source.disconnect(); } catch(e){} }
       this.stations.delete(id);
     }
     this.stationsList = this.stationsList.filter(s => (s.id || s.name) !== id);
@@ -235,11 +261,11 @@ export class RadioEngine {
         
         const finalGain = Math.max(0, Math.min(1, gain));
         
-        if (state.gainNode) {
+        if (state.gainNode && !state.isCorsBlocked) {
           state.gainNode.gain.setTargetAtTime(finalGain, this.audioCtx!.currentTime, 0.05);
           state.audio.volume = 1;
         } else {
-          // Fallback for CORS blocked streams
+          // Fallback for CORS blocked streams — direct volume
           state.audio.volume = finalGain;
         }
         

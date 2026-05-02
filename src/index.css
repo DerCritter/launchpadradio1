@@ -1659,7 +1659,7 @@ body {
   flex-direction: column;
   align-items: center;
   padding: 30px 20px;
-  min-height: 480px;
+  min-height: 300px;
 }
 
 .user-status-bar button {
@@ -1674,3 +1674,556 @@ body {
 }
 
 .user-status-bar button:hover { opacity: 1; }
+
+/* --- AUDD TOKEN INPUT --- */
+.audd-token-input {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  margin-top: 15px;
+}
+
+.audd-token-input input {
+  background: #111;
+  border: 1px solid #400;
+  color: #f00;
+  padding: 12px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8rem;
+  text-align: center;
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.audd-token-input input:focus {
+  border-color: #f00;
+  box-shadow: 0 0 10px rgba(255,0,0,0.2);
+}
+
+/* --- SHAZAM RESULT ENHANCEMENTS --- */
+.result-album-art {
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  border: 2px solid #400;
+  margin-bottom: 15px;
+  box-shadow: 0 0 20px rgba(255,0,0,0.3);
+}
+
+.result-album {
+  color: #666;
+  font-size: 0.7rem;
+  margin-top: 5px;
+  font-style: italic;
+}
+
+.result-links {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.result-link {
+  padding: 6px 14px;
+  border: 1px solid #444;
+  color: #fff;
+  text-decoration: none;
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  border-radius: 20px;
+  transition: all 0.2s;
+}
+
+.result-link.spotify { border-color: #1DB954; color: #1DB954; }
+.result-link.spotify:hover { background: #1DB954; color: #000; }
+.result-link.apple { border-color: #fc3c44; color: #fc3c44; }
+.result-link.apple:hover { background: #fc3c44; color: #fff; }
+
+/* --- MOBILE SIDEBAR TOGGLE --- */
+.sidebar-toggle {
+  display: none;
+}
+
+/* ============================================ */
+/* === RESPONSIVE: TABLET (≤1024px)         === */
+/* ============================================ */
+@media (max-width: 1024px) {
+  body {
+    height: auto;
+    overflow: auto;
+  }
+
+  .app-layout {
+    flex-direction: column;
+    height: auto;
+    min-height: 100vh;
+    overflow-y: auto;
+  }
+
+  .radio-container {
+    flex: none;
+    min-height: auto;
+    padding: 20px 10px 80px;
+  }
+
+  .radio-chassis {
+    width: 100%;
+    max-width: 700px;
+    padding: 25px;
+  }
+
+  .radio-faceplate {
+    grid-template-columns: 1fr 180px;
+    gap: 20px;
+    padding: 20px;
+  }
+
+  .knob {
+    width: 90px;
+    height: 90px;
+  }
+
+  .community-sidebar {
+    width: 100%;
+    border-left: none;
+    border-top: 2px solid #200;
+    max-height: 250px;
+  }
+
+  .sidebar-header {
+    text-align: center;
+    padding: 15px;
+  }
+
+  .user-list {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+    padding: 10px 15px;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  .sidebar-user-card {
+    min-width: 180px;
+    flex-shrink: 0;
+    margin-bottom: 0;
+    clip-path: none;
+  }
+
+  .add-panel {
+    width: 90vw;
+    max-width: 550px;
+    max-height: 85vh;
+    overflow-y: auto;
+    padding: 25px;
+  }
+
+  .shazam-panel {
+    width: 85vw;
+    max-width: 380px;
+  }
+}
+
+/* ============================================ */
+/* === RESPONSIVE: PHONE (≤768px)           === */
+/* ============================================ */
+@media (max-width: 768px) {
+  body {
+    height: auto;
+    overflow: auto;
+  }
+
+  .app-layout {
+    flex-direction: column;
+    height: auto;
+    min-height: 100vh;
+    overflow-y: auto;
+  }
+
+  .radio-container {
+    flex: none;
+    padding: 10px 8px 90px;
+    min-height: auto;
+    background: #000;
+  }
+
+  .radio-chassis {
+    width: 100%;
+    padding: 15px;
+    border-width: 6px;
+    border-radius: 4px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.9);
+  }
+
+  .brand {
+    position: relative;
+    top: auto;
+    left: auto;
+    text-align: center;
+    margin-bottom: 10px;
+    font-size: 0.55rem;
+    letter-spacing: 4px;
+  }
+
+  .radio-faceplate {
+    grid-template-columns: 1fr;
+    gap: 15px;
+    padding: 15px;
+  }
+
+  .radio-display {
+    height: auto;
+    min-height: 100px;
+    padding: 15px;
+  }
+
+  .freq-display {
+    font-size: 2.5rem;
+    letter-spacing: -2px;
+  }
+
+  .unit {
+    font-size: 0.9rem;
+    margin-left: 8px;
+  }
+
+  .station-name {
+    font-size: 0.85rem;
+    margin-top: 8px;
+    letter-spacing: 1px;
+  }
+
+  .metadata-label {
+    font-size: 0.55rem;
+  }
+
+  .visualizer-canvas {
+    width: 120px;
+    height: 22px;
+  }
+
+  .controls-section {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 15px;
+  }
+
+  .knob-container {
+    flex-shrink: 0;
+  }
+
+  .knob {
+    width: 70px;
+    height: 70px;
+    touch-action: none;
+  }
+
+  .knob-marker {
+    top: 8px;
+    width: 4px;
+    height: 14px;
+  }
+
+  .power-group {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    padding: 10px;
+  }
+
+  .start-button, .normalize-button, .shazam-button,
+  .restore-setup-btn, .panel-toggle, .lock-btn-disabled {
+    height: 34px;
+    font-size: 0.55rem;
+    letter-spacing: 1px;
+    min-height: 44px; /* touch target */
+  }
+
+  .dial-section {
+    grid-column: 1;
+    height: 80px;
+  }
+
+  .marker-label {
+    font-size: 0.55rem;
+    display: none;
+  }
+
+  .station-marker.active .marker-label {
+    display: block;
+  }
+
+  .mark .number {
+    font-size: 0.55rem;
+  }
+
+  /* Add Panel — full screen on mobile */
+  .add-panel {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    max-width: none;
+    transform: none;
+    border-radius: 0;
+    outline: none;
+    overflow-y: auto;
+    padding: 20px;
+    z-index: 2000;
+  }
+
+  .search-results {
+    max-height: 200px;
+  }
+
+  .mini-freq-lcd {
+    font-size: 1.6rem;
+  }
+
+  .mode-selector {
+    width: 120px;
+  }
+
+  /* Shazam Panel — full screen on mobile */
+  .shazam-panel {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    max-width: none;
+    transform: none;
+    border-radius: 0;
+    z-index: 2000;
+  }
+
+  .shazam-body {
+    min-height: auto;
+    padding: 20px 15px;
+  }
+
+  /* Stations footer */
+  .stations-footer {
+    margin-top: 25px;
+  }
+
+  .footer-header {
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-start;
+  }
+
+  .stations-grid {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 10px;
+  }
+
+  .station-card {
+    padding: 15px 8px;
+  }
+
+  .card-freq {
+    font-size: 1.1rem;
+  }
+
+  .card-name {
+    font-size: 0.55rem;
+    letter-spacing: 1px;
+  }
+
+  .card-tags {
+    font-size: 0.4rem;
+  }
+
+  /* Community sidebar — horizontal scroll strip on mobile */
+  .community-sidebar {
+    width: 100%;
+    border-left: none;
+    border-top: 2px solid #200;
+    max-height: none;
+    box-shadow: 0 -10px 30px rgba(0,0,0,0.5);
+  }
+
+  .community-sidebar::after {
+    display: none;
+  }
+
+  .sidebar-header {
+    text-align: center;
+    padding: 12px 15px;
+    font-size: 0.6rem;
+    letter-spacing: 3px;
+  }
+
+  .user-list {
+    display: flex;
+    flex-direction: row;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 10px;
+    gap: 10px;
+    scrollbar-width: none;
+  }
+
+  .sidebar-user-card {
+    min-width: 160px;
+    flex-shrink: 0;
+    margin-bottom: 0;
+    clip-path: none;
+    padding: 10px;
+  }
+
+  .user-avatar {
+    font-size: 1rem;
+  }
+
+  /* Login overlay */
+  .login-box {
+    width: 90vw;
+    max-width: 360px;
+    padding: 30px 20px;
+  }
+
+  .login-box h2 {
+    font-size: 1.2rem;
+    letter-spacing: 3px;
+  }
+
+  .login-box input {
+    font-size: 1rem;
+    padding: 12px;
+  }
+
+  /* Status bar */
+  .user-status-bar {
+    padding: 6px 12px;
+  }
+}
+
+/* ============================================ */
+/* === RESPONSIVE: SMALL PHONE (≤480px)     === */
+/* ============================================ */
+@media (max-width: 480px) {
+  .radio-chassis {
+    padding: 10px;
+    border-width: 4px;
+  }
+
+  .radio-faceplate {
+    padding: 10px;
+    gap: 10px;
+  }
+
+  .freq-display {
+    font-size: 2rem;
+  }
+
+  .controls-section {
+    flex-direction: column;
+  }
+
+  .knob {
+    width: 60px;
+    height: 60px;
+  }
+
+  .power-group {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .stations-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .dial-section {
+    height: 60px;
+  }
+}
+
+/* ============================================ */
+/* === LANDSCAPE PHONE                      === */
+/* ============================================ */
+@media (max-height: 500px) and (orientation: landscape) {
+  .app-layout {
+    flex-direction: row;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .radio-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px;
+  }
+
+  .radio-chassis {
+    padding: 10px;
+  }
+
+  .radio-faceplate {
+    grid-template-columns: 1fr 150px;
+    gap: 10px;
+    padding: 10px;
+  }
+
+  .radio-display {
+    height: auto;
+    min-height: 70px;
+    padding: 10px;
+  }
+
+  .freq-display {
+    font-size: 1.8rem;
+  }
+
+  .knob {
+    width: 55px;
+    height: 55px;
+  }
+
+  .dial-section {
+    height: 50px;
+  }
+
+  .stations-footer {
+    margin-top: 10px;
+  }
+
+  .community-sidebar {
+    width: 200px;
+    border-left: 2px solid #200;
+    border-top: none;
+    max-height: none;
+    height: 100vh;
+  }
+
+  .user-list {
+    flex-direction: column;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  .sidebar-user-card {
+    min-width: auto;
+  }
+
+  .add-panel, .shazam-panel {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    width: 100%;
+    max-width: none;
+    transform: none;
+    z-index: 2000;
+  }
+}
